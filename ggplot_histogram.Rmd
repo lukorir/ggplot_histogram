@@ -1,0 +1,104 @@
+---
+title: "histogram"
+author: "Luke"
+date: "30/11/2021"
+output: word_document
+---
+  
+  ```{r setup, include=FALSE, cache=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(janitor)
+library(readxl)
+library(naniar)
+library(flextable)
+library(captioner)
+setwd("C:/Users/lkorir/Folder D/Personal/Jackpot")
+```
+# Risk of exposure at producer level
+
+```{r load, include=FALSE}
+# Functions to recode favourable and unfavourable practices into binary
+rec_fav_var <- function(var){
+  case_when(var == 4 | var == 5 ~ 1,
+            var == 1 | var == 2 | var == 3 ~ 0,
+            TRUE ~ var)
+}
+
+rec_unfav_var <- function(var){
+  case_when(var == 3 |var == 4 | var == 5 ~ 0,
+            var == 1 | var == 2 ~ 1,
+            TRUE ~ var)
+}
+
+market_data <- read_excel("C:/Users/lkorir/Folder D/Personal/Jackpot/S2 Market Survey Data.xlsx") %>%  clean_names()
+
+rvf_data <- read_excel("S1 Data on Risk Practices at Household Level - with marked variables.xls") %>%  clean_names()
+
+risk_vars <- c(names(rvf_data[, 13:34]))
+
+favourable_practices <- c("we_boil_our_milk_before_consumpt", "when_a_sick_animal_dies_we_immee", "when_a_sick_animal_dies_we_immed", "when_we_slaughter_an_animal_we", "when_an_animal_aborts_we_bury_th", "when_an_animal_aborts_we_throw_t", "when_your_cattle_sheep_and_goat_a")
+
+unfavourable_practices <- setdiff(risk_vars, favourable_practices)
+
+independent_vars <- c("zone", "sex", "marital_status", "household_type", "highest_level_of_education", "tribe", "main_livelihood_activity_recoded")
+
+rvf_data <- rvf_data %>%
+  replace_with_na_all(condition = ~.x == "-") %>% 
+  mutate_at(vars(risk_vars), funs(as.numeric(.))) %>% 
+  mutate_at(vars(favourable_practices), funs(rec_fav_var(.))) %>%
+  mutate_at(vars(unfavourable_practices), funs(rec_unfav_var(.))) %>% 
+  mutate_at(vars(independent_vars), funs(as.factor(.))) %>% 
+  mutate(risks = rowSums(across(risk_vars), na.rm = TRUE))
+
+freq_good_pract <- rvf_data %>% count(risks, sort = TRUE)
+
+freq_chart <- freq_good_pract %>%
+  ggplot(aes(y = n, x = risks)) +
+  geom_bar(stat = "identity",  fill = '#4682B4') +
+  theme_bw() +
+  scale_y_continuous(limits = c(0, 65), breaks = seq(0, 60, by = 10), position = 'left', expand = c(0,0)) +
+  geom_hline(yintercept = 0, color = "black", size = 2) +
+  scale_x_continuous(limits = c(-1, 23), breaks = seq(0, 22, by = 3)) +
+  xlab("Number of good practices") +
+  ylab("Frequency") +
+  theme(axis.ticks.y = element_blank(),
+        panel.grid.major.y = element_line(colour = "grey80", size = 0.5),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_blank()) 
+
+# OLS model
+m1 <- lm(risks ~ zone + sex + marital_status + household_type + age_years + highest_level_of_education + tribe + main_livelihood_activity_recoded,  data = rvf_data)
+hist(resid(m1), breaks = 20) # normality
+plot(fitted(m1), resid(m1)) # heteroscedasticity
+abline(0,0)
+qqnorm(resid(m1)) # normality
+qqline(resid(m1))
+plot(density(resid(m1))) # normality
+
+table_1 <- as_flextable(m1)
+```
+Figure 1. Frequency distribution of good practices
+
+```{r freq_chart, echo=FALSE, results='asis', cache=FALSE}
+freq_chart
+```
+
+Table 1. Good Producer practices and socioeconomic characteristics
+
+```{r table_1, echo = FALSE, results='asis', cache=FALSE}
+table_1
+```
+The factors that influence exposure to risk were determined by running an ordinary least squares regression model on total number of good practices that minimize exposure as a function of socioeconomic characteristics. 
+
+## Findings
+
++ producers located in *zone 2:4* have less good practices than those in *zone 1*
+  + *sex2* producers have more good practices than *sex1* producers
++ *highest_level_of_education2* have more good practices than *highest_level_of_education1* producers
++ *tribe2* have less good practices than *tribe1*
+  + *main_livelihood_activity_recoded4* producers have more good practices than *main_livelihood_activity_recoded1*
+  
+  
+  
+  
