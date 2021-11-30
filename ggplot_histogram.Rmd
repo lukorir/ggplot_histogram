@@ -13,7 +13,6 @@ library(readxl)
 library(naniar)
 library(flextable)
 library(captioner)
-setwd("C:/Users/lkorir/Folder D/Personal/Jackpot")
 ```
 # Risk of exposure at producer level
 
@@ -66,39 +65,4 @@ freq_chart <- freq_good_pract %>%
         panel.grid.major.y = element_line(colour = "grey80", size = 0.5),
         panel.grid.minor.x = element_blank(),
         panel.grid.major.x = element_blank()) 
-
-# OLS model
-m1 <- lm(risks ~ zone + sex + marital_status + household_type + age_years + highest_level_of_education + tribe + main_livelihood_activity_recoded,  data = rvf_data)
-hist(resid(m1), breaks = 20) # normality
-plot(fitted(m1), resid(m1)) # heteroscedasticity
-abline(0,0)
-qqnorm(resid(m1)) # normality
-qqline(resid(m1))
-plot(density(resid(m1))) # normality
-
-table_1 <- as_flextable(m1)
 ```
-Figure 1. Frequency distribution of good practices
-
-```{r freq_chart, echo=FALSE, results='asis', cache=FALSE}
-freq_chart
-```
-
-Table 1. Good Producer practices and socioeconomic characteristics
-
-```{r table_1, echo = FALSE, results='asis', cache=FALSE}
-table_1
-```
-The factors that influence exposure to risk were determined by running an ordinary least squares regression model on total number of good practices that minimize exposure as a function of socioeconomic characteristics. 
-
-## Findings
-
-+ producers located in *zone 2:4* have less good practices than those in *zone 1*
-  + *sex2* producers have more good practices than *sex1* producers
-+ *highest_level_of_education2* have more good practices than *highest_level_of_education1* producers
-+ *tribe2* have less good practices than *tribe1*
-  + *main_livelihood_activity_recoded4* producers have more good practices than *main_livelihood_activity_recoded1*
-  
-  
-  
-  
